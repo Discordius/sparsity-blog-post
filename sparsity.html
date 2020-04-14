@@ -1,0 +1,752 @@
+<!doctype html>
+<meta charset="utf-8">
+
+<!-- Distill template -->
+<script src="https://distill.pub/template.v2.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- SVG zooming -->
+<script src="svg-pan-zoom.js"></script>
+
+<!-- Mathjax -->
+<!--<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>-->
+
+<style >
+ .tab {
+  overflow: hidden;
+  border: 1px solid #ccc;
+  background-color: #f1f1f1;
+}
+
+.tab button {
+  background-color: inherit;
+  float: left;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: 0.3s;
+}
+
+.tab button:hover {
+  background-color: #ddd;
+}
+
+.tab button.active {
+  background-color: #ccc;
+}
+
+.tabcontent {
+  /*display: none;*/
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-top: none;
+}
+
+.box {
+  width: 100%; height: 400px; border:1px solid black;
+}
+
+.code {
+  font-family:monospace;
+  background-color: lightgray;
+}
+
+figcaption {
+  display: block;
+}
+
+</style>
+
+<script>
+
+function scrollable_svg(obj, on_loaded) {
+  obj.addEventListener('load', function() {
+        let spz = svgPanZoom(obj, {
+          maxZoom: 50,
+          zoomScaleSensitivity: 0.6,
+          zoomEnabled: true,
+          controlIconsEnabled: true
+        });
+        if (on_loaded) {
+          on_loaded(spz);
+        }
+      })
+}
+
+function set_button(t_list, target) {
+  for (t of t_list) {
+   t.className = "tablist";
+  }
+  target.className += " active";
+}
+
+function make_buttons(root, count, callback, onclick) {
+  let t_list = [];
+  let tabs = document.createElement("div");
+    root.appendChild(tabs);
+    tabs.className = "tab"
+    let lst = [];
+    for (i = 0; i < count; i++) {
+      lst.push(i);
+    }
+    lst.forEach((v) => {
+      let button = document.createElement("button");
+      if (v === 0) {
+        button.className = "tablinks active"
+      } else {
+        button.className = "tablinks"
+      }
+      button.onclick = (evt) => {
+        set_button(t_list, evt.currentTarget);
+        onclick(v)
+      };
+      callback(button, v);
+      tabs.appendChild(button);
+      t_list.push(button);
+  });
+  return t_list;
+}
+
+
+
+function digit_tabs_mode2(name, file_name, zoom_buttons) {
+  let root = document.getElementById(name);
+
+  let s1 = 0;
+  let s2 = 0;
+
+  let t_list1 = make_buttons(root, 6, (button, i) => {
+      let img = document.createElement("img");
+          img.setAttribute("src", "imgs/inputs/input_" + i + ".png");
+          img.style.width = "70px";
+          button.appendChild(img);
+  }, (i) => {
+    s1 = i;
+    render();
+  });
+
+  let t_list2 = make_buttons(root, 10, (button, i) => {
+    button.innerHTML = "" + i;
+  }, (i) => {
+    s2 = i;
+    render();
+  });
+
+
+  let target_point = null;
+  let target_zoom = null;
+
+  function on_loaded(spz) {
+    console.log(spz);
+    if (target_point) {
+      spz.zoom(target_zoom);
+      spz.pan(target_point);
+      target_point = null;
+      target_zoom = null;
+    }
+  }
+
+  let obj = document.createElement("object");
+  root.appendChild(obj);
+  let scroller = scrollable_svg(obj, on_loaded);
+  obj.className = "box";
+
+  function render() {
+    let name = "imgs/" + file_name + "-a" + s1 + "-" + s2 + ".svg";
+    obj.setAttribute("data", name);
+  };
+
+  if (zoom_buttons) {
+    zoom_buttons.forEach(b => {
+      console.log(b);
+      button = document.createElement("button");
+      button.innerHTML = b.name;
+      button.onclick = (env) => {
+        s1 = b.input;
+        s2 = b.output;
+        set_button(t_list1, t_list1[s1]);
+        set_button(t_list2, t_list2[s2]);
+        target_point = {x: b.x, y: b.y};
+        target_zoom = b.zoom;
+        render();
+      }
+      root.appendChild(button);
+    });
+  }
+
+  render();
+}
+
+function digit_tabs_fp2(name) {
+  let root = document.getElementById(name);
+
+  let s1 = 0;
+
+  let t_list2 = make_buttons(root, 10, (button, i) => {
+    button.innerHTML = "" + i;
+  }, (i) => {
+    s1 = i;
+    render();
+  });
+
+
+  let objs = [];
+  let names = [];
+
+  function render() {
+    let name = "imgs/fp2/embed-fp2-" + s1 + ".svg";
+
+    let found = false;
+    for (let i = 0; i < names.length; i++) {
+      if (names[i] === name) {
+        found = true;
+        objs[i].style.display = "block";
+      } else {
+        objs[i].style.display = "none";
+      }
+    }
+    if (!found) {
+        let obj = document.createElement("object");
+        obj.setAttribute("data", name);
+        root.appendChild(obj);
+        scrollable_svg(obj);
+        obj.className = "box";
+        objs.push(obj);
+        names.push(name);
+
+      }
+  };
+  render();
+}
+
+function digit_tabs_ep(name, zoom_buttons) {
+  let root = document.getElementById(name);
+
+  let s1 = 0;
+
+  let t_list1 = make_buttons(root, 6, (button, i) => {
+      let img = document.createElement("img");
+          img.setAttribute("src", "imgs/inputs/input_" + i + ".png");
+          img.style.width = "70px";
+          button.appendChild(img);
+  }, (i) => {
+    s1 = i;
+    render();
+  });
+
+
+  let target_point = null;
+  let target_zoom = null;
+
+  function on_loaded(spz) {
+    console.log(spz);
+    if (target_point) {
+      spz.zoom(target_zoom);
+      spz.pan(target_point);
+      target_point = null;
+      target_zoom = null;
+    }
+  }
+
+  let objs = [];
+  let names = [];
+
+  function render() {
+    let name = "imgs/ep/embed-ep-a" + s1 + ".svg";
+
+    let found = false;
+    for (let i = 0; i < names.length; i++) {
+      if (names[i] === name) {
+        found = true;
+        objs[i].style.display = "block";
+      } else {
+        objs[i].style.display = "none";
+      }
+    }
+    if (!found) {
+        let obj = document.createElement("object");
+        obj.setAttribute("data", name);
+        root.insertBefore(obj, div);
+        root.in
+        scrollable_svg(obj, on_loaded);
+        obj.className = "box";
+        objs.push(obj);
+        names.push(name);
+
+      }
+  };
+
+  div = document.createElement("div");
+  root.appendChild(div);
+
+  if (zoom_buttons) {
+    zoom_buttons.forEach(b => {
+      console.log(b);
+      button = document.createElement("button");
+      button.innerHTML = b.name;
+      button.onclick = (env) => {
+        s1 = b.input;
+        set_button(t_list1, t_list1[s1]);
+        target_point = {x: b.x, y: b.y};
+        target_zoom = b.zoom;
+        render();
+      }
+      root.appendChild(button);
+    });
+  }
+
+  render();
+}
+</script>
+
+
+<body>
+<script type="text/front-matter">
+    title: "Does sparsity imply better interpretability?"
+    description: "YYY"
+    authors:
+    - Stanislav Böhm: https://github.com/spirali/
+    - Robert Kirk: https://github.com/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    - Tomáš Gavenčiak: https://github.com/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    affiliations:
+    - IT4Innovations: https://www.it4i.cz/
+    - ??? : http://????????????????????????????????
+    - ??? : http://????????????????????????????????
+  </script>
+
+  <d-front-matter>
+    <script id='distill-front-matter' type="text/json">{
+    "title": "Does sparsity imply better interpretability?",
+    "description": "",
+    "published": "123, 2020",
+    "authors": [
+      {
+        "author":"Stanislav Böhm",
+        "authorURL":"https://github.com/spirali/",
+        "affiliations": [{"name": "IT4Innovations", "url": "https://www.it4i.cz/"}]
+      },
+      {
+        "author":"Robert Kirk",
+        "authorURL":"https://github.com/RobertKirk",
+        "affiliations": [{"name": "Independent"}]
+      },
+      {
+        "author":"Tomáš Gavenčiak",
+        "authorURL":"https://gavento.ucw.cz/",
+        "affiliations": [{"name": "Independent"}]
+      }
+    ],
+    "katex": {
+      "delimiters": [
+        {"left": "$$", "right": "$$", "display": true},
+        {"left": "$", "right": "$", "display": false}
+      ]
+    }
+  }</script>
+  </d-front-matter>
+
+  <d-title>
+    <h1>Does sparsity imply better interpretability?</h1>
+  </d-title>
+  <d-article>
+<p>
+  <figure>
+  <img width="100%" src="imgs/twotrees.png"/>
+  <figcaption>
+    <p>Illustration of the dense/sparse viewpoint of one of the authors.</p>
+  </figcaption>
+ </figure>
+</p>
+
+<!--<p style="color: red">
+  NOTE: There should be no "empty" figures in the text, especially after
+  clicking on buttons.  If you see an empty figure, please let me know!
+</p>-->
+
+<h2>Abstract</h2>
+<p>
+The goal of this text is to shed some light on the question of whether making a
+neural network sparser also makes it more interpretable. To this end, we perform
+a series of experiments focused on pruning a simple neural networks visualising
+the resulting network as a flowgraph. This visualisation is only useful for
+sparse networks, as we will demonstrate in the following sections.
+</p>
+
+<p>
+There are quite natural arguments for supporting the claim that sparser systems
+should be more interpretable than dense ones. Debugging a system with many
+weights and interconnections intuitively seems more complex than to do the same
+for a sparser system with less parameters and connections. High connectivity is
+one of reasons why neural networks are not considered much transparent.
+</p>
+
+<p>
+However, there are reasons to believe the opposite may be true.
+Human-recognizable features are often complex objects - such as in an image
+classification task, where humans recognize faces, dog ears, and trees as
+opposed to simple patterns of white noise. There is hence a risk that making a
+system sparser could lessen it's capacity to work with such high-level concepts.
+In other words, a dense system may be able to use complex but
+human-interpretable features, whereas a sparse system wouldn't have the capacity
+to reconise these features and hence focus on simpler features which are less
+meaningful to humans.  There is also the observation in Engstrom et al. <d-cite
+key="engstrom2020"></d-cite> that neural networks trained against adversarial
+attacks produce more human recognizable features, without the need for
+regularisation when optimisaing the feature representation. If making system
+sparse makes it more vulnerable to adversarial attacks, then it may then by less
+human-interpretable. However, it is unclear in what direction the causality could
+flow.
+</p>
+
+
+<!--**************************************************-->
+
+<h2>Introduction of experiment</h2>
+
+<p>
+To test whether sparsity is good for interpretability, the obvious thing to do
+is to get a sparse neural network, and see whether it's easier to interpret. To
+do it we need following things: a neural network, a pruning method to produce a
+sparse network, and an interpretability method to apply to this sparse network.
+</p>
+
+<p>
+<strong>Neural network.</strong> We will use a simple network of the following
+architecture trained on MNIST (2 hidden layers of size 32 with ReLU activations;
+in total 26432 weights in kernels):
+<img src="imgs/prune1.png" style="padding: 2em; width: 80%;"/>
+</p>
+
+<p>
+This architecture gets 95+% accuracy on the MNIST test set after three epochs of
+training.
+</p>
+
+<p>
+<strong>Pruning method.</strong> The lottery ticket hypothesis
+<d-cite key="ticket"></d-cite> claims that neural networks pruned, reset to
+their initial training weights, and retrained, and that this retrained network
+will often learn faster, attain better asymptotic performance and generalise
+better than the original network. The pruning method used in this paper is
+relatively simple:
+<ul>
+  <li>
+    Initialize the neural network, and save the initialisation.
+  </li>
+  <li>
+    Train the network to convergence.
+  </li>
+  <li>
+    Prune X% of smallest weights per layer.
+  </li>
+  <li>
+    Reset the network to its initialization,
+  </li>
+  <li>
+    Repeat the above process, each time pruning a percentage of the weights.
+  </li>
+</ul>
+Note that in our experiment we are pruning only only kernels, not biases. As there
+are only 74 weights in biases, this isn't a consequential number of parameters
+compared to 27432, and it makes the implementation simpler.
+</p>
+
+<p>
+<strong>Gaining insight.</strong> Having matrices with many zeros is not in
+itself helpful. We need to use an interpretation method to take advantage of
+this sparsity. Because we hope for quite a sparse representation at the end,
+chose to visualize the network as it's flowgraph.
+</p>
+
+<p>
+  To demonstrate how this works, we'll use the following computation:
+$$\begin{bmatrix}5 & 3\\2 & 1\end{bmatrix} \times \begin{bmatrix}i_0\\i_1\end{bmatrix} = \begin{bmatrix}\text{output}_0\\\text{output}_1\end{bmatrix}$$
+This can be represented as the fllowing flowgraph:
+</p>
+
+<figure>
+  <img style="max-width: 300px; height:auto" src="imgs/mm.png"/>
+  <figcaption>
+    <p>
+      <ul>
+        <li>Each box produces a <strong>scalar</strong> value</li>
+        <li>Blue nodes are inputs, and yellow nodes are outputs.</li>
+        <li>
+          <span class="code">&lt;x,y&gt;</span> shows an a simple overapproximation
+          of bounds. In this example we assume that the inputs are in the interval
+          $[0, 1]$. Since the computation is simple, the calculated bounds for
+          outputs are precise in this particular case.
+        </li>
+      </ul>
+    </p>
+  </figcaption>
+</figure>
+
+
+
+<h2>Initial results</h2>
+
+<p>
+When we apply the lottery ticket pruning method on all layers, we can prune the
+network to 2% of its original size (leaving only 539 weights) and still achieve
+90.5% accuracy on test set. For more detail on the number of weights per layer
+see the following figure:
+<img src="imgs/prune2.png" style="padding: 2em; width: 80%;"/>
+</p>
+
+<p>
+Now we can apply our flow-graph visualisation on the pruned network. The output
+is a graph with 963 vertices and 1173 edges. Note that for this figure and all
+following, we are rounding values to two decimal places.
+
+  <object id="fp1" data="imgs/fullprune_1.svg" type="image/svg+xml" style="width: 100%; height: 400px; border:1px solid black; "></object>
+  <script>scrollable_svg(document.getElementById("fp1"));</script>
+</p>
+
+<!--**************************************************-->
+
+<h2>Making it clearer</h2>
+
+<p>
+  As we can see, the flowgraph is quite still quite dense, and it's difficult to
+  extract any insight into how the network behaves from it. To make it clearer,
+  we can exploit the following observations: Many vertices and corresponding
+  edges are from the input layer to the first hidden layer. We can detect dot
+  product operations in the first layer and simply visualize weights as a 2D
+  image, because the first layer is directly connected to the pixels. For
+  example, instead of the following dot product:
+$$
+0.82i_{[4, 24]} - 0.72 i_{[11, 4]} - 0.72 i_{[11, 14]} + 0.99 i_{[15, 9]} - 0.98 i_{[26, 8]} - 0.92 i_{[27, 17]}
+$$
+(where $i_{[x, y]}$ is an input pixel at position $[x, y]$)
+we can instead use the following image:
+<figure>
+<img src="imgs/img12.png"/>
+<figcaption>
+  <p>
+    Color intensity is used to show absolute value; green is used for positive
+    values; red for negative, and gray is the zero.
+  <p>
+</figcaption>
+</figure>
+</p>
+
+<p>
+  A further simplification is to display only subgraph of the flowgraph that is
+  relevant for each output separately.  While it loses information about what is
+  reused between outputs, it provides more readable graphs.
+</p>
+<p>
+  Combining these two simplifications, we get the following visualisation:
+  <div id="tabsfp2"></div>
+  <script>digit_tabs_fp2("tabsfp2")</script>
+  <p>
+  Here we can observe that some filters on the input are relatively
+  interpretable, and it is clear what shapes they detect:
+  </p>
+  <p>
+    <img style="width: 30%;" src="imgs/img1.png"/>
+    <img style="width: 30%;" src="imgs/img17.png"/>
+    <img style="width: 30%;" src="imgs/img16.png"/>
+  </p>
+  <p>On the other hand, some of them look more like random pixel detections:</p>
+  <p>
+    <img style="width: 30%;" src="imgs/img12.png"/>
+    <img style="width: 30%;" src="imgs/img15.png"/>
+    <img style="width: 30%;" src="imgs/img20.png"/>
+  </p>
+
+  <p>
+    The computation after the initial layer still remains relatively dense and
+    hard to understand. It is now possible to track the flow of
+    individual values through the graph in most places, but we can do better.
+  </p>
+
+  <!--**************************************************-->
+
+  <h2>Visualisating behaviour on specific inputs</h2>
+
+  <p>
+    To get more insight, we can also visualize flowgraphs on individual inputs.
+    This allows us to visualize values flowing between nodes; the thickness of
+    lines corresponds to the absolute value of the scalar value produced by a
+    source operation while green lines carry positive values, red lines carry negative
+    values, and gray lines are exactly 0.
+  </p>
+  <p>
+    Also, for each visualized dot product, we show the result of applying this
+    filter to the input image (that is, the result of the dot product
+    multiplication of the input and the weights). This is shown as the
+    right-hand figure next to the dot product filter visualisations at the top
+    of the flowgraph.
+  </p>
+
+  <p>
+    The following figure shows this visualisation for six random images from the
+    test set (the values in square brackets in the nodes are the actual values
+    that flow through the graph):
+  <div id="tabsfp2a"></div>
+  <script>digit_tabs_mode2("tabsfp2a", "fp2/embed-fp2", [
+    /*{name: "Zoom to: Detector of central pixels for 0 when '1' is the input", input: 2, output: 0, x: -4965.381178019406, y: 99.03602996661414, zoom: 12.5},
+    {name: "Zoom to: Main flow that leads to correct recognization of '0'", input: 3, output: 0, x: -2409.6396972236175, y: -456.27840975003477, zoom: 10.4},
+    {name: "Zoom to: Detector of bottom pixels for '0'", input: 3, output: 0, x: -4206.223354480844, y: 55.55457622764315, zoom: 16.6},
+    {name: "Zoom to: Final sum where central pixels overweights others", input: 5, output: 0, x: -2432.6274809327633, y: -593.5849024466042, zoom: 11}*/
+  ])</script>
+  </p>
+
+  <p>
+    The figure shows that it relatively trackable to see which part of the
+    network contributes to the final decision. For example, let us see how the
+    probability that the input is digit 0 (output_0) is computed. For the digit
+    1 input, it is clear that the decision to not classify it as a 0 is heavily
+    influenced by one specific dot product that detects pixels in the middle of
+    the figure. Another observation is that there are two main branches in the
+    flow that plays an important role of classifing digit 0 correctly (i.e.
+    digit 0 and output_0). It mixes together a detector of a bottom pixels and
+    detection of some specific pixels. For the sixth input (digit 6) is used, it
+    is not classified as 0 even though some of detectors are positively
+    triggered (similarly to case with input '0'); however, the detector of the
+    central pixels overweights and produce a negative score.
+  </p>
+
+  <!--**************************************************-->
+
+  <h2>Pruning once more</h2>
+
+  <p>
+    Let us revisit the idea of pruning. We have pruned the network as much as
+    possible to get a more understandable object then a fully connected network.
+    However, there is space for trade-offs; we don't need to prune each layer
+    equally, and could trade off pruning some layers more to prune other layers
+    less.
+  </p>
+
+  <p>
+    Specifically, in our case we have a visualization of the first layer who's
+    interpretability is not influenced as much by the sparsity. This allows us
+    to completely disable pruning of the first layer. With this approach we get
+    the following network flowgraph that has 93.5% accuracy on the test set:
+    <img src="imgs/prune3.png"/>
+  </p>
+
+  <p>
+  The network has 95% of its original weights, but last two kernels are several
+  times smaller than in the previous case. This gives us a significantly
+  simpler flowgraph. It can be now easily shown in one diagram for each outputs without loosing
+  clarity. The following figure shows resulting flow graphs applied on six
+  figures from the testing test.
+
+  </p>
+  <div id="tabsep"></div>
+  <script>digit_tabs_ep("tabsep",
+  /*[
+    {name: "Zoom to: Detector of central pixels for 0 when '1' is the input", input: 2, output: 0, x: -4965.381178019406, y: 99.03602996661414, zoom: 12.5},
+    {name: "Zoom to: Main flow that leads to correct recognization of '0'", input: 3, output: 0, x: -2409.6396972236175, y: -456.27840975003477, zoom: 10.4},
+    {name: "Zoom to: Detector of bottom pixels for '0'", input: 3, output: 0, x: -4206.223354480844, y: 55.55457622764315, zoom: 16.6},
+    {name: "Zoom to: Final sum where central pixels overweights others", input: 5, output: 0, x: -2432.6274809327633, y: -593.5849024466042, zoom: 11}
+  ]*/)</script>
+
+  <p>
+    One interesting observation is that this network returns a constant value
+    for output_2. This means that the digit 2 is a kind of
+    reference point; an input is classified as digit 2 if other outputs are
+    sufficiently suppressed.
+  </p>
+
+  <p>
+    We can again easily track down properties like digit 1 is not classified as
+    0 because of the pixel in the middle part. In this version, it is less clear
+    what each dot products detects, but on the other hand it very
+    straightforward what is happening with each dot product value in the rest of
+    the computation.
+  </p>
+
+  <h2>Domains other than MNIST</h2>
+  <p>
+    The approach of pruning and visualization of flow graphs may be also applyied
+    to other domains such as reinforcement learning for continuous control. We
+    use the classic <a href="https://github.com/openai/gym/wiki/CartPole-v0">OpenAI CartPole-v0</a>
+    environment.
+    The following figure shows a network trained with DQN, and then pruned when
+    reaching maximal score, on the CartPole environment. For this network, we
+    can observe that one input (i_1, which is the cart velocity) is completely
+    ignored, while the agent still gains the maximal score.
+  </p>
+  <p>
+  <object id="cartpole" data="imgs/cartpole.svg" type="image/svg+xml" style="width: 100%; height: 400px; border:1px solid black; "></object>
+  <script>scrollable_svg(document.getElementById("cartpole"));</script>
+  </p>
+  <p>
+    On the other hand, our approach doesn't seem useful for convolutional neural
+    networks, since applying the convolutional filters over the whole output of
+    the previous layer is a part of the algorithm and it is not pruned with
+    weights. Therefore, a convolutional filter even with a single weight may
+    produce many connections in the flow graph. The presented approach still
+    produces dense flow graphs even for heavily pruned convolutional networks.
+  </p>
+  <p>
+    The following figure shows a network created as 3 convolutional layers (6
+    channels, 3x3 filters, without padding, kernel sizes: 54, 324, 324) followed
+    by a dense layer (kernel size: 29040, no activation).  The layers was pruned
+    to 6 (11%), 23 (7%), 23 (7%), and 135 (0.46%) of their original sizes.  The
+    resulting network has only 80% accuracy and quite a low number of weights,
+    but still produces a relatively large and dense graphs.
+    The graph for computing output_7 is the largest one (1659 vertices).
+  </p>
+  <div id="tabscc"></div>
+  <script>digit_tabs_mode2("tabscc", "cc/embed-cc")</script>
+</p>
+
+  <h2>Conclusion</h2>
+  <p>
+    While we may not have conclusively answered the question posed in the title,
+    we have generated insight and intuitions with this simple example. As expected,
+    pruning dense object may lead to more interpretable objects; however, there
+    are trade-offs. Only counting the number of weights in the final object is
+    probably not the ideal metric to get a most interpretable result. In our
+    experiment, the later flowgraphs (of dense nets) where more interpretable despite having
+    many more weights than the previous examples. This points to an answer to
+    the opposing views of sparsity possibly giving both more and less
+    interpretability; In some settings sparsity is beneficial in giving humans
+    understanding and transparency, but when a visualisation which doesn't rely
+    on sparsity can still produce results that humans can understand and
+    interpret, the sparsity isn't necessarily useful.
+  </p>
+
+</d-article>
+
+  <d-appendix>
+    <d-acknowledgements>
+      <h3>Acknowledgement</h3>
+      <p>This text was created as a part of AISRP.</p>
+    </d-acknowledgements>
+  <d-bibliography>
+    <script type="text/bibtex">
+    @misc{
+      engstrom2020,
+      title={Adversarial Robustness as a Prior for Learned Representations},
+      author={Logan Engstrom and Andrew Ilyas and Shibani Santurkar and Dimitris Tsipras and Brandon Tran and Aleksander Madry},
+      year={2019},
+      url={https://arxiv.org/abs/1906.00945}
+    }
+
+    @article{ticket,
+      author    = {Jonathan Frankle and
+                   Michael Carbin},
+      title     = {The Lottery Ticket Hypothesis: Training Pruned Neural Networks},
+      journal   = {CoRR},
+      volume    = {abs/1803.03635},
+      year      = {2018},
+      url       = {http://arxiv.org/abs/1803.03635},
+      archivePrefix = {arXiv},
+      eprint    = {1803.03635},
+      timestamp = {Mon, 13 Aug 2018 16:48:29 +0200},
+      biburl    = {https://dblp.org/rec/journals/corr/abs-1803-03635.bib},
+      bibsource = {dblp computer science bibliography, https://dblp.org}
+    }
+  </script>
+  </d-bibliography>
+  </d-appendix>
+</body>
